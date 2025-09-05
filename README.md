@@ -1,53 +1,105 @@
-> Edited for use in IDX on 07/09/12
 
-# Welcome to your Expo app 👋
+# Theme Park Pro - The Greatest Roller Coaster Log App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+This project is building the ultimate roller coaster logging application.
 
-## Get started
+## Part 1: The Foundational Concept - A User's "Rating DNA"
 
-#### Android
+We are not just collecting ratings; we are building a dynamic profile of a user's unique taste, their personal "Rating DNA." This DNA is defined once and then applied to every ride they log. It's composed of two parts: the criteria they care about and the weight (importance) they assign to each. This DNA can evolve, and the app must intelligently reflect those changes across their entire logbook.
 
-Android previews are defined as a `workspace.onStart` hook and started as a vscode task when the workspace is opened/started.
+## Part 2: The Data Structures - Where the Numbers Live
 
-Note, if you can't find the task, either:
-- Rebuild the environment (using command palette: `IDX: Rebuild Environment`), or
-- Run `npm run android -- --tunnel` command manually run android and see the output in your terminal. The device should pick up this new command and switch to start displaying the output from it.
+To execute the math, we need to be precise about where the data is stored in Firestore.
 
-In the output of this command/task, you'll find options to open the app in a
+### A. The User's Profile Document (The DNA Source)
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+This document, located at `/users/{userUID}`, is the single source of truth for a user's current preferences. It will contain a specific field:
 
-You'll also find options to open the app's developer menu, reload the app, and more.
+`ratingPreferences`: An array of objects. Each object represents a single criterion the user has chosen and weighted.
 
-#### Web
+Here is the exact TypeScript interface for the objects within this array:
 
-Web previews will be started and managred automatically. Use the toolbar to manually refresh.
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```typescript
+interface RatingPreference {
+  id: string;          // A unique identifier, e.g., 'airtime', 'theming'
+  label: string;       // The display name, e.g., 'Airtime', 'Theming'
+  weight: number;      // The user-defined importance, as a percentage (e.g., 50 for 50%)
+}
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Example `ratingPreferences` field in Firestore:
 
-## Learn more
+```json
+"ratingPreferences": [
+  { "id": "airtime", "label": "Airtime", "weight": 50 },
+  { "id": "thrill", "label": "Thrill", "weight": 30 },
+  { "id": "theming", "label": "Theming", "weight": 10 },
+  { "id": "pacing", "label": "Pacing", "weight": 5 },
+  { "id": "smoothness", "label": "Smoothness", "weight": 5 }
+]
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+### B. The Ride Log Document (The Historical Snapshot)
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+This document, located at `/users/{userUID}/rideLogs/{logID}`, is an immutable record of a single ride experience. It stores a snapshot of both the user's ratings and their preferences at the time of logging.
 
-## Join the community
+`overallRating`: The final calculated "Score at the Time."
 
-Join our community of developers creating universal apps.
+`ratedCriteria`: An array of objects. This looks similar to the preferences, but crucially includes the 1-10 rating the user gave for that specific ride.
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Here is the exact TypeScript interface for the objects within this array:
+
+```typescript
+interface RatedCriterion {
+  id: string;          // e.g., 'airtime'
+  label: string;       // e.g., 'Airtime'
+  weight: number;      // The weight used for the calculation (e.g., 50)
+  rating: number;      // The user's 1-10 score for this criterion on this ride (e.g., 7)
+}
+```
+
+## Part 3: The Core Mathematical Equation
+
+The entire system revolves around a single, powerful weighted average formula:
+
+**Overall Score = Σ (Rating_i × (Weight_i / 100))**
+
+## Part 4: The Logistical Triggers - When and Where the Math Happens
+
+The same core equation is used in three distinct scenarios:
+
+*   **Scenario A: Saving a New Ride Log**
+*   **Scenario B: Viewing a Ride Detail Screen**
+*   **Scenario C: Sorting the Logbook by "Current Score"**
+
+## Firebase Integration
+
+### Saving Lists of Data
+
+To generate a unique, timestamp-based key for every child added to a Firebase database reference we can send a `POST` request. For our `users` path, it made sense to define our own keys since each user has a unique username. But when users add blog posts to the app, we'll use a `POST` request to auto-generate a key for each blog post:
+
+```
+curl -X POST -d '{
+  "author": "alanisawesome",
+  "title": "The Turing Machine"
+}' 'https://docs-examples.firebaseio.com/fireblog/posts.json'
+```
+
+Our `posts` path now has the following data:
+
+```json
+{
+  "posts": {
+    "-JSOpn9ZC54A4P4RoqVa": {
+      "author": "alanisawesome",
+      "title": "The Turing Machine"
+    }
+  }
+}
+```
+
+Notice that the key `-JSOpn9ZC54A4P4RoqVa` was automatically generated for us because we used a `POST` request. A successful request will be indicated by a `200 OK` HTTP status code, and the response will contain the key of the new data that was added:
+
+```json
+{"name":"-JSOpn9ZC54A4P4RoqVa"}
+```

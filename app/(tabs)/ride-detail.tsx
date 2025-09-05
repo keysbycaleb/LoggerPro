@@ -1,83 +1,133 @@
 
 import React, { useState, useEffect } from 'react';
-import { Text, View } from 'react-native';
+import { Text, View, StyleSheet, ActivityIndicator } from 'react-native';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
 import { initializeApp } from 'firebase/app';
 import { firebaseConfig } from '../../firebaseConfig';
-import { RatingPreference, RideLog } from '../../types';
-import { calculateOverallRating } from '../../lib/math';
+import { RideLog } from '../../types';
+import { useRoute } from '@react-navigation/native';
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-
-// Placeholders for user UID and log ID
-const userUID = "test-user"; // In a real app, this would come from auth state
-const logID = "some-log-id"; // In a real app, this would be passed as a route param
+const userUID = "test-user"; // Placeholder
 
 export default function RideDetailScreen() {
+  const route = useRoute();
+  const { rideId } = route.params as { rideId: string };
   const [rideLog, setRideLog] = useState<RideLog | null>(null);
-  const [currentScore, setCurrentScore] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchRideData = async () => {
+    const fetchRideLog = async () => {
+      setIsLoading(true);
       try {
-        // Fetch the specific ride log
-        const rideLogRef = doc(db, "users", userUID, "rideLogs", logID);
+        const rideLogRef = doc(db, "users", userUID, "rideLogs", rideId);
         const rideLogSnap = await getDoc(rideLogRef);
-
-        if (!rideLogSnap.exists()) {
-          console.log("No such ride log document!");
-          setIsLoading(false);
-          return;
-        }
-
-        const fetchedRideLog = rideLogSnap.data() as RideLog;
-        setRideLog(fetchedRideLog);
-
-        // Fetch the user's current preferences
-        const userDocRef = doc(db, "users", userUID);
-        const userDocSnap = await getDoc(userDocRef);
-
-        if (userDocSnap.exists()) {
-          const userData = userDocSnap.data();
-          const currentUserPreferences = userData.ratingPreferences || [];
-
-          // Calculate the "Current Score"
-          const ratedCriteriaWithCurrentWeights = fetchedRideLog.ratedCriteria.map(criterion => ({
-            ...criterion,
-            weight: currentUserPreferences.find((p: RatingPreference) => p.id === criterion.id)?.weight || 0,
-          }));
-
-          const newScore = calculateOverallRating(ratedCriteriaWithCurrentWeights);
-          setCurrentScore(newScore);
+        if (rideLogSnap.exists()) {
+          setRideLog(rideLogSnap.data() as RideLog);
         } else {
-          console.log("No such user document!");
+          console.log("No such document!");
         }
       } catch (error) {
-        console.error("Error fetching ride data: ", error);
+        console.error("Error fetching ride log: ", error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchRideData();
-  }, []);
+    if (rideId) {
+      fetchRideLog();
+    }
+  }, [rideId]);
 
   if (isLoading) {
-    return <View style={{ flex: 1, padding: 20 }}><Text>Loading ride details...</Text></View>;
+    return <ActivityIndicator size="large" style={styles.loader} />;
   }
 
   if (!rideLog) {
-    return <View style={{ flex: 1, padding: 20 }}><Text>Ride log not found.</Text></View>;
+    return <Text style={styles.errorText}>Ride log not found.</Text>;
   }
 
   return (
-    <View style={{ flex: 1, padding: 20 }}>
-      <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 20 }}>Ride Details</Text>
-      <Text>Score at the Time: {rideLog.overallRating}</Text>
-      {currentScore !== null && <Text>Current Score: {currentScore.toFixed(2)}</Text>}
+    <View style={styles.container}>
+      <Text style={styles.title}>Ride Details</Text>
+      <View style={styles.card}>
+          <Text style={styles.rideName}>Ride Name Placeholder</Text>
+          <Text style={styles.overallRating}>Overall Score: {rideLog.overallRating.toFixed(2)}</Text>
+          <View style={styles.criteriaList}>
+              {rideLog.ratedCriteria.map(criterion => (
+                  <View key={criterion.id} style={styles.criterionRow}>
+                      <Text style={styles.criterionLabel}>{criterion.label}</Text>
+                      <Text style={styles.criterionRating}>{criterion.rating}/10</Text>
+                  </View>
+              ))}
+          </View>
+      </View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        padding: 20,
+        backgroundColor: '#f5f5f5',
+    },
+    title: {
+        fontSize: 28,
+        fontWeight: 'bold',
+        textAlign: 'center',
+        marginBottom: 20,
+    },
+    card: {
+        backgroundColor: 'white',
+        borderRadius: 10,
+        padding: 20,
+        elevation: 3,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+    },
+    rideName: {
+      fontSize: 22,
+      fontWeight: 'bold',
+      marginBottom: 15,
+      textAlign: 'center',
+    },
+    overallRating: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#1fb28a',
+        textAlign: 'center',
+        marginBottom: 20,
+    },
+    criteriaList: {
+        marginTop: 10,
+    },
+    criterionRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingVertical: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
+    },
+    criterionLabel: {
+        fontSize: 16,
+    },
+    criterionRating: {
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    loader: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    errorText: {
+        textAlign: 'center',
+        marginTop: 50,
+        fontSize: 16,
+        color: 'red',
+    },
+});
