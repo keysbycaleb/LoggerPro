@@ -7,7 +7,7 @@ export default function AddRideScreen() {
     <View style={styles.container}>
       <Text style={styles.title}>Add New Ride</Text>
       {/* Form to add a new ride will go here */}
-    </Vw>
+    </View>
   );
 }
 
