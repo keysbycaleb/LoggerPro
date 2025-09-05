@@ -20,7 +20,7 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
-        <Stack.Screen name="logbook" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="ride-detail" options={{ title: 'Ride Details' }} />
         <Stack.Screen name="add-ride" options={{ presentation: 'modal', title: 'Add New Ride' }} />
         <Stack.Screen name="rating-dna" options={{ presentation: 'modal', title: 'Your Rating DNA' }} />

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Button, FlatList, Text, View, StyleSheet, TouchableOpacity } from 'react-native';
+import { Button, FlatList, Text, View, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import { getFirestore, collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import { initializeApp } from 'firebase/app';
 import { firebaseConfig } from '../../firebaseConfig';
@@ -25,8 +25,11 @@ export default function LogbookScreen() {
       try {
         const userDocRef = doc(db, "users", userUID);
         const userDocSnap = await getDoc(userDocRef);
-        if (userDocSnap.exists()) {
-          setCurrentUserPreferences(userDocSnap.data().ratingPreferences || []);
+        const preferences = userDocSnap.exists() ? userDocSnap.data().ratingPreferences || [] : [];
+        setCurrentUserPreferences(preferences);
+
+        if (preferences.length === 0) {
+          navigation.navigate('rating-dna');
         }
 
         const rideLogsCollectionRef = collection(db, "users", userUID, "rideLogs");
@@ -41,7 +44,7 @@ export default function LogbookScreen() {
     };
 
     fetchData();
-  }, []);
+  }, [navigation]);
 
   const sortedLogs = useMemo(() => {
     const getScore = (log: RideLog, useCurrent: boolean) => {
@@ -71,7 +74,7 @@ export default function LogbookScreen() {
     );
 
     return (
-        <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('RideDetail', { rideId: item.id })}>
+        <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('ride-detail', { rideId: item.id })}>
             <Text style={styles.rideName}>Ride Name Placeholder</Text>
             <View style={styles.scoresContainer}>
                 <View style={styles.scoreBox}>
@@ -94,6 +97,9 @@ export default function LogbookScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>My Logbook</Text>
+        <TouchableOpacity onPress={() => navigation.navigate('add-ride')} style={styles.addButton}>
+            <Text style={styles.addButtonText}>+ Add Ride</Text>
+        </TouchableOpacity>
       <View style={styles.sortContainer}>
         <TouchableOpacity onPress={() => setSortOrder('original')} style={[styles.sortButton, sortOrder === 'original' && styles.sortButtonActive]}>
             <Text style={styles.sortButtonText}>Sort by Original</Text>
@@ -123,6 +129,18 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         textAlign: 'center',
         marginVertical: 20,
+    },
+    addButton: {
+        backgroundColor: '#1fb28a',
+        padding: 15,
+        borderRadius: 10,
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    addButtonText: {
+        color: 'white',
+        fontSize: 18,
+        fontWeight: 'bold',
     },
     sortContainer: {
         flexDirection: 'row',
