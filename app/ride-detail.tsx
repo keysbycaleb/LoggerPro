@@ -3,8 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { Text, View, StyleSheet, ActivityIndicator } from 'react-native';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
 import { initializeApp } from 'firebase/app';
-import { firebaseConfig } from '../../firebaseConfig';
-import { RideLog } from '../../types';
+import { firebaseConfig } from '../firebaseConfig';
+import { RideLog } from '../types';
 import { useRoute } from '@react-navigation/native';
 
 const app = initializeApp(firebaseConfig);
