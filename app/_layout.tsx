@@ -24,7 +24,6 @@ export default function RootLayout() {
         <Stack.Screen name="ride-detail" options={{ title: 'Ride Details' }} />
         <Stack.Screen name="add-ride" options={{ presentation: 'modal', title: 'Add New Ride' }} />
         <Stack.Screen name="rating-dna" options={{ presentation: 'modal', title: 'Your Rating DNA' }} />
-        <Stack.Screen name="+not-found" />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
