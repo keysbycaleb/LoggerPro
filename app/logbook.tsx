@@ -3,9 +3,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Button, FlatList, Text, View, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import { getFirestore, collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import { initializeApp } from 'firebase/app';
-import { firebaseConfig } from '../../firebaseConfig';
-import { RatingPreference, RideLog } from '../../types';
-import { calculateOverallRating } from '../../lib/math';
+import { firebaseConfig } from '../firebaseConfig';
+import { RatingPreference, RideLog } from '../types';
+import { calculateOverallRating } from '../lib/math';
 import { useNavigation } from '@react-navigation/native';
 
 const app = initializeApp(firebaseConfig);
